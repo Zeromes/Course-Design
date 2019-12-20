@@ -13,10 +13,15 @@ public:
 	void solve();
 };
 
-struct block
+struct blocks
 {
 	int left;
 	int right;
+	int index;
+};
+
+struct blockm
+{
 	int index;
 };
 
@@ -41,7 +46,8 @@ LabyM::LabyM()
 void LabyM::generate()
 {
 	int idx = 1;
-	block b[8];
+	blockm bm[8];
+	blocks bs[8];
 	int l = 0, r = 0;
 	srand((unsigned)time(0));
 	for (int k = 0; k < 8; k++)laby[0][k] = 0;
@@ -58,22 +64,23 @@ void LabyM::generate()
 	{
 		if (laby[0][i] == 1)
 		{
-			for (int t = l; t <= r; t++)b[t].right = r;
-			b[i].index = -1;
-			b[i].left = -1;
-			b[i].right = -1; 
+			for (int t = l; t <= r; t++)bs[t].right = r;
+			bs[i].index = -1;
+			bs[i].left = -1;
+			bs[i].right = -1; 
 			l = i + 1;
 			r = i + 1;
 			idx++;
 		}
 		else
 		{
-			b[i].left = l;
-			b[i].index = idx;
+			bs[i].left = l;
+			bs[i].index = idx;
 			r = i;
 		}
 	}
-	for (int t = l; t <= r; t++)b[t].right = r;
+	for (int t = l; t <= r; t++)bs[t].right = r;
+	for (int t = 0; t < 8; t++)bm[t].index = -1;
 	//创建标签结束
 
 	//生成其他（除最后两行)
@@ -82,7 +89,58 @@ void LabyM::generate()
 		//插入一个
 		if (j % 2 == 0)
 		{
-
+			for (int k = 0; k < 8; k++)//添加墙
+			{
+				if (rand() % 100 < 50)
+				{
+					laby[j][k] = 1;
+				}
+			}
+			l = 0;
+			xunzhao:
+			for (int t = l; t < 8; t++)//根据左界寻找右界
+			{
+				if (laby[j][t] == 1)
+				{
+					r = t - 1;
+					break;
+				}
+			}
+			if (l <= r)//如果左界右界之间存在空间
+			{
+				int d;
+				bool found = false;
+				for (int t = l; t <= r; t++)//找标识
+				{
+					if (laby[j - 1][t] == 0)
+					{
+						d = bs[t].index;
+						found = true;
+						break;
+					}
+				}
+				if (found)//如果找到标识
+				{
+					for (int t = l; t <= r; t++)
+					{
+						bs[t].right = r;
+						bs[t].left = l;
+						bs[t].index = d;
+					}
+				}
+				else//如果没找到标识
+				{
+					idx++;
+					for (int t = l; t <= r; t++)
+					{
+						bs[t].right = r;
+						bs[t].left = l;
+						bs[t].index = idx;
+					}
+				}
+			}
+			l = r + 2;
+			if (l <= 7)goto xunzhao;
 		}
 		//擦除一个
 		else
@@ -90,7 +148,7 @@ void LabyM::generate()
 			bool done = false;
 			for (int k = 0; k < 8; k++)
 			{
-				if (b[k].index != -1)
+				if (bs[k].index != -1)
 				{
 					if (rand() % 100 < 50)
 					{
@@ -98,6 +156,7 @@ void LabyM::generate()
 						else
 						{
 							laby[j][k] = 0;
+							bm[k].index = bs[k].index;
 							done = true;
 						}
 					}
@@ -105,7 +164,7 @@ void LabyM::generate()
 				else
 				{
 					bool has = false;
-					for (int t = b[k - 1].left; t <= b[k - 1].right; t++)
+					for (int t = bs[k - 1].left; t <= bs[k - 1].right; t++)
 					{
 						if (laby[j][t] == 0)has = true;
 						break;
@@ -115,6 +174,9 @@ void LabyM::generate()
 			}
 		}
 	}
+	//最后两行
+	for (int k = 0; k < 8; k++)laby[6][k] = laby[5][k];
+	
 
 	for (int j = 1; j < 9; j++)						//将生成的迷宫赋值到show当中
 	{
