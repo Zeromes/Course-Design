@@ -1,209 +1,171 @@
 #include <iostream>
 #include <ctime>
+#include<vector>
 using namespace std;
 
 class LabyM
 {
 private:
-	int laby[8][8];
-	int show[10][10];
+	int laby[12][12];
+	int visited[12][12];
+	bool solved;
+	int exitX;
+	int exitY;
 public:
 	LabyM();
+	void showLaby();
 	void generate();
-	void solve();
+	void solve(int, int);
 };
 
-struct blocks
-{
-	int left;
-	int right;
-	int index;
-};
-
-struct blockm
-{
-	int index;
-};
-
+//初始化空迷宫
 LabyM::LabyM()
 {
-	for (int j = 0; j < 10; j++) for (int k = 0; k < 10; k++)show[j][k] = 0;
-	for (int j = 0; j < 8; j++) for (int k = 0; k < 8; k++)laby[j][k] = 1;
-	for (int j = 0; j < 8; j += 2) for (int k = 0; k < 8; k++)laby[j][k] = 0;
-	for (int k = 0; k < 8; k++)laby[6][k] = 1;
-	for (int k = 0; k < 8; k++)laby[7][k] = 0;
-	for (int i = 0; i < 9; i++)
-	{
-		show[0][i] = 1;
-		show[i][0] = 1;
-		show[9][i] = 1;
-		show[i][9] = 1;
-	}
-	show[1][0] = 0;
-	show[8][9] = 0;
+	for (int j = 0; j < 11; j++) for (int k = 0; k < 12; k++)laby[j][k] = 1;
+	for (int j = 0; j < 11; j++) for (int k = 0; k < 12; k++)visited[j][k] = 0;
+	solved = false;
 }
 
-void LabyM::generate()
+void LabyM::showLaby()
 {
-	int idx = 1;
-	blockm bm[8];
-	blocks bs[8];
-	int l = 0, r = 0;
-	srand((unsigned)time(0));
-	for (int k = 0; k < 8; k++)laby[0][k] = 0;
-	for (int k = 1; k < 8; k++)						//生成第一行
+	for (int j = 0; j < 11; j++)
 	{
-		if (rand() % 100 < 50)
+		for (int k = 0; k < 11; k++)
 		{
-			laby[0][k] = 1;
-			k++;
-		}
-	}
-	//创建标签
-	for (int i = 0; i < 8; i++)
-	{
-		if (laby[0][i] == 1)
-		{
-			for (int t = l; t <= r; t++)bs[t].right = r;
-			bs[i].index = -1;
-			bs[i].left = -1;
-			bs[i].right = -1; 
-			l = i + 1;
-			r = i + 1;
-			idx++;
-		}
-		else
-		{
-			bs[i].left = l;
-			bs[i].index = idx;
-			r = i;
-		}
-	}
-	for (int t = l; t <= r; t++)bs[t].right = r;
-	for (int t = 0; t < 8; t++)bm[t].index = -1;
-	//创建标签结束
-
-	//生成其他（除最后两行)
-	for (int j = 1; j < 6; j++)
-	{
-		//插入一个
-		if (j % 2 == 0)
-		{
-			for (int k = 0; k < 8; k++)//添加墙
-			{
-				if (rand() % 100 < 50)
-				{
-					laby[j][k] = 1;
-				}
-			}
-			l = 0;
-			xunzhao:
-			for (int t = l; t < 8; t++)//根据左界寻找右界
-			{
-				if (laby[j][t] == 1)
-				{
-					r = t - 1;
-					break;
-				}
-			}
-			if (l <= r)//如果左界右界之间存在空间
-			{
-				int d;
-				bool found = false;
-				for (int t = l; t <= r; t++)//找标识
-				{
-					if (laby[j - 1][t] == 0)
-					{
-						d = bs[t].index;
-						found = true;
-						break;
-					}
-				}
-				if (found)//如果找到标识
-				{
-					for (int t = l; t <= r; t++)
-					{
-						bs[t].right = r;
-						bs[t].left = l;
-						bs[t].index = d;
-					}
-				}
-				else//如果没找到标识
-				{
-					idx++;
-					for (int t = l; t <= r; t++)
-					{
-						bs[t].right = r;
-						bs[t].left = l;
-						bs[t].index = idx;
-					}
-				}
-			}
-			l = r + 2;
-			if (l <= 7)goto xunzhao;
-		}
-		//擦除一个
-		else
-		{
-			bool done = false;
-			for (int k = 0; k < 8; k++)
-			{
-				if (bs[k].index != -1)
-				{
-					if (rand() % 100 < 50)
-					{
-						if (done)done = false;
-						else
-						{
-							laby[j][k] = 0;
-							bm[k].index = bs[k].index;
-							done = true;
-						}
-					}
-				}
-				else
-				{
-					bool has = false;
-					for (int t = bs[k - 1].left; t <= bs[k - 1].right; t++)
-					{
-						if (laby[j][t] == 0)has = true;
-						break;
-					}
-					if (!has)laby[j][k - 1] = 0;
-				}
-			}
-		}
-	}
-	//最后两行
-	for (int k = 0; k < 8; k++)laby[6][k] = laby[5][k];
-	
-
-	for (int j = 1; j < 9; j++)						//将生成的迷宫赋值到show当中
-	{
-		for (int k = 1; k < 9; k++)
-		{
-			show[j][k] = laby[j - 1][k - 1];
-		}
-	}
-	for (int j = 0; j < 10; j++)						//输出初始迷宫
-	{
-		for (int k = 0; k < 10; k++)
-		{
-			if (show[j][k] == 1)cout << "■";
+			if (laby[j][k] == 1)cout << "■";
+			else if (laby[j][k] == 5)cout << "☆";
 			else cout << "  ";
 		}
 		cout << endl;
 	}
 }
 
-void LabyM::solve()
+void LabyM::generate()
 {
+	srand((unsigned)time(0));
+	//最外围设置为路，可以有效的保护里面一层墙体，并防止挖出界
+	for (int i = 0; i < 12; i++) 
+	{
+		laby[i][0] = 0;
+		laby[0][i] = 0;
+		laby[11][i] = 0;
+		laby[i][11] = 0;
+	}
 
+	//墙队列
+	vector<int> X;
+	vector<int> Y;
+
+	//初始位置
+	X.push_back(2);
+	Y.push_back(2);
+
+	//当墙队列为空时结束循环
+	while (X.size()) 
+	{
+		//在墙队列中随机取一点
+		int r = rand() % X.size();
+		int x = X[r];
+		int y = Y[r];
+
+		//判读上下左右四个方向是否为路
+		int count = 0;
+		for (int i = x - 1; i < x + 2; i++) 
+		{
+			for (int j = y - 1; j < y + 2; j++) 
+			{
+				if (abs(x - i) + abs(y - j) == 1 && laby[i][j] == 0) {
+					++count;
+				}
+			}
+		}
+
+		//若四周无路或只有一个方向有路
+		if (count <= 1) 
+		{
+			//挖去这一块
+			laby[x][y] = 0;
+			//在墙队列中插入新的墙
+			for (int i = x - 1; i < x + 2; i++) 
+			{
+				for (int j = y - 1; j < y + 2; j++) 
+				{
+					if (abs(x - i) + abs(y - j) == 1 && laby[i][j] == 1) 
+					{
+						X.push_back(i);
+						Y.push_back(j);
+					}
+				}
+			}
+		}
+		//删除当前墙
+		X.erase(X.begin() + r);
+		Y.erase(Y.begin() + r);
+	}
+
+	//设置迷宫进出口
+	laby[2][1] = 0;
+	visited[2][2] = 1;
+	for (int i = 9; i >= 0; i--) 
+	{
+		if (laby[i][9] == 0) 
+		{
+			laby[i][10] = 0;
+			exitX = i;
+			exitY = 10;
+			break;
+		}
+	}
+
+	//输出初始迷宫
+	showLaby();
+}
+
+void LabyM::solve(int x, int y)
+{
+	laby[2][1] = 5;
+	//如果当前点是出口
+	if (x == exitX && y == exitY)
+	{
+		visited[x][y] = 1;
+		laby[x][y] = 5;
+		solved = true;
+		return;
+	}
+	//如果当前点非出口
+	else
+	{
+		visited[x][y] = 1;
+		laby[x][y] = 5;
+		//寻找周围是否有路
+		for (int i = x - 1; i < x + 2; i++)
+		{
+			for (int j = y - 1; j < y + 2; j++)
+			{
+				//如果上下左右有路且没走过，且迷宫未解决，访问该路
+				if (abs(x - i) + abs(y - j) == 1 && laby[i][j] == 0 && visited[i][j] == 0 && !solved)
+				{
+					solve(i, j);
+				}
+			}
+		}
+		//访问完周边所有方块后，若迷宫未解决,移除当前的的路标并返回
+		if (!solved)
+		{
+			laby[x][y] = 0;
+			return;
+		}
+		return;
+	}
 }
 
 int main()
 {
-	LabyM LM;
-	LM.generate();
+	LabyM lm;
+	cout << "生成唯一解迷宫（8×8）：" << endl;
+	lm.generate();
+	lm.solve(2, 2);
+	cout << "最优解（唯一解）：" << endl;
+	lm.showLaby();
 	return 0;
 }
